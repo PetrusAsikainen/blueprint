@@ -50,6 +50,7 @@ import type {
     PopoverHoverTargetHandlers,
     PopoverSharedProps,
 } from "./popoverSharedProps";
+import { PopoverVirtualTarget } from "./popoverVirtualTarget";
 import { getBasePlacement, getTransformOrigin } from "./popperUtils";
 import type { PopupKind } from "./popupKind";
 
@@ -316,18 +317,19 @@ export class Popover<
 
         const childrenCount = React.Children.count(props.children);
         const hasRenderTargetProp = props.renderTarget !== undefined;
+        const hasVirtualTargetProp = props.virtualTarget !== undefined;
         const hasTargetPropsProp = props.targetProps !== undefined;
 
-        if (childrenCount === 0 && !hasRenderTargetProp) {
+        if (childrenCount === 0 && !hasRenderTargetProp && !hasVirtualTargetProp) {
             console.warn(Errors.POPOVER_REQUIRES_TARGET);
         }
         if (childrenCount > 1) {
             console.warn(Errors.POPOVER_WARN_TOO_MANY_CHILDREN);
         }
-        if (childrenCount > 0 && hasRenderTargetProp) {
+        if (childrenCount > 0 && (hasRenderTargetProp || hasVirtualTargetProp)) {
             console.warn(Errors.POPOVER_WARN_DOUBLE_TARGET);
         }
-        if (hasRenderTargetProp && hasTargetPropsProp) {
+        if (hasTargetPropsProp && (hasRenderTargetProp || hasVirtualTargetProp)) {
             console.warn(Errors.POPOVER_WARN_TARGET_PROPS_WITH_RENDER_TARGET);
         }
     }
@@ -343,10 +345,17 @@ export class Popover<
     public reposition = () => this.popperScheduleUpdate?.();
 
     private renderTarget = ({ ref: popperChildRef }: ReferenceChildrenProps) => {
-        const { children, className, disabled, fill, openOnTargetFocus, renderTarget } = this.props;
+        const { children, className, disabled, fill, openOnTargetFocus, renderTarget, virtualTarget } = this.props;
         const { isOpen } = this.state;
         const isControlled = this.isControlled();
         const isHoverInteractionKind = this.isHoverInteractionKind();
+
+        // If we have a virtual target, don't waste time thinking about concrete elements.
+        if (virtualTarget) {
+            // this.targetRef is intentionally left unset, as PopoverVirtualTarget doesn't render
+            // into a DOM element and thus doesn't contain many properties expected by other code.
+            return <PopoverVirtualTarget ref={popperChildRef} virtualTarget={virtualTarget} />;
+        }
 
         let { targetTagName } = this.props;
         if (fill) {
@@ -711,6 +720,11 @@ export class Popover<
     };
 
     private handleOverlayClose = (e?: React.SyntheticEvent<HTMLElement>) => {
+        // For virtual targets, an event will never come from inside the target, and this.targetRef will be empty.
+        if (this.props.virtualTarget && e !== undefined) {
+            this.setOpenState(false, e);
+        }
+
         if (this.targetRef.current == null || e === undefined) {
             return;
         }

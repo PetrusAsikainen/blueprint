@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { Boundary, Modifier, Placement, RootBoundary, StrictModifiers } from "@popperjs/core";
+import type { Boundary, Modifier, Placement, RootBoundary, StrictModifiers, VirtualElement } from "@popperjs/core";
 import type * as React from "react";
 import type { StrictModifier } from "react-popper";
 
@@ -229,7 +229,7 @@ export interface PopoverSharedProps<TProps extends DefaultPopoverTargetHTMLProps
      * Target renderer which receives props injected by Popover which should be spread onto
      * the rendered element. This function should return a single React node.
      *
-     * Mutually exclusive with `children` and `targetTagName` props.
+     * Mutually exclusive with `children`, `targetTagName` and `virtualTarget` props.
      */
     renderTarget?: (
         // N.B. we would like to discriminate between "hover" and "click" popovers here, so that we can be clear
@@ -293,7 +293,8 @@ export interface PopoverSharedProps<TProps extends DefaultPopoverTargetHTMLProps
      * the tag you choose supports the HTML attributes Popover applies to the
      * target element.
      *
-     * This prop is mutually exclusive with the `renderTarget` API.
+     * This prop is mutually exclusive with the `renderTarget` and
+     * `virtualTarget` APIs.
      *
      * @default "span" ("div" if `fill={true}`)
      */
@@ -324,4 +325,11 @@ export interface PopoverSharedProps<TProps extends DefaultPopoverTargetHTMLProps
      * @default true
      */
     usePortal?: boolean;
+
+    /**
+     * Virtual target for positioning the Popover.
+     *
+     * Mutually exclusive with `children`, `targetTagName` and `renderTarget` props.
+     */
+    virtualTarget?: VirtualElement;
 }

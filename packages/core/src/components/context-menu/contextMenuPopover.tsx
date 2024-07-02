@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
+import type { VirtualElement } from "@popperjs/core";
 import classNames from "classnames";
 import * as React from "react";
 
 import { Classes, DISPLAYNAME_PREFIX } from "../../common";
 import { Popover } from "../popover/popover";
-import type { PopoverTargetProps } from "../popover/popoverSharedProps";
-import { Portal } from "../portal/portal";
 
 import type { ContextMenuPopoverOptions, Offset } from "./contextMenuShared";
 
@@ -53,15 +52,27 @@ export const ContextMenuPopover = React.memo(function _ContextMenuPopover(props:
     } = props;
     const cancelContextMenu = React.useCallback((e: React.SyntheticEvent<HTMLDivElement>) => e.preventDefault(), []);
 
-    // Popover should attach its ref to the virtual target we render inside a Portal, not the "inline" child target
-    const renderTarget = React.useCallback(
-        ({ ref }: PopoverTargetProps) => (
-            <Portal>
-                <div className={Classes.CONTEXT_MENU_VIRTUAL_TARGET} style={targetOffset} ref={ref} />
-            </Portal>
-        ),
-        [targetOffset],
-    );
+    // Popover should attach its ref to a virtual target, not the "inline" child target
+    const virtualTarget = React.useMemo((): VirtualElement => {
+        const top = targetOffset?.top ?? 0;
+        const left = targetOffset?.left ?? 0;
+        const rect: DOMRect = {
+            bottom: top,
+            height: 0,
+            left,
+            right: left,
+            top,
+            width: 0,
+            x: left,
+            y: top,
+            toJSON() {
+                return this;
+            },
+        };
+        return {
+            getBoundingClientRect: () => rect,
+        };
+    }, [targetOffset]);
 
     const handleInteraction = React.useCallback(
         (nextOpenState: boolean) => {
@@ -94,7 +105,7 @@ export const ContextMenuPopover = React.memo(function _ContextMenuPopover(props:
                 [Classes.DARK]: isDarkTheme,
             })}
             positioningStrategy="fixed"
-            renderTarget={renderTarget}
+            virtualTarget={virtualTarget}
         />
     );
 });
